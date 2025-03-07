@@ -14,8 +14,8 @@ python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_bo
     --vllm_num_engines 2 \
     --vllm_tensor_parallel_size 1 \
     --colocate_actor_ref \
-    --pretrain Qwen/Qwen2.5-Math-7B \
-    --save_path /home/ubuntu/chongli/checkpoint/test-rl-math-20k \
+    --pretrain Qwen/Qwen2.5-Coder-7B-Instruct \
+    --save_path /home/ubuntu/chongli/checkpoint/test-rl-bash \
     --micro_train_batch_size 2 \
     --train_batch_size 32 \
     --micro_rollout_batch_size 2 \
@@ -32,8 +32,8 @@ python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_bo
     --actor_learning_rate 5e-7 \
     --critic_learning_rate 9e-6 \
     --init_kl_coef 0.01 \
-    --prompt_data  /home/ubuntu/chongli/simpleRL-reason/train/data/math_level3to5_data_processed_with_qwen_prompt.json \
-    --input_key input \
+    --prompt_data  /home/ubuntu/joey/swe-tests/bashbenchtasks.json \
+    --input_key task_description \
     --normalize_reward \
     --flash_attn \
     --adam_offload \
@@ -41,6 +41,6 @@ python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_bo
     --save_steps 4 \
     --load_checkpoint \
     --use_wandb e3b3692567fa87e382e457dca44df981dd4feb05 \
-    --wandb_run_name maths_simple_check \
+    --wandb_run_name bash_simple_check \
     --ckpt_path $HDFS_HOME/checkpoints/$RUN_NAME  \
     --max_ckpt_num 20000

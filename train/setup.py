@@ -85,5 +85,5 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: System :: Distributed Computing",
     ],
-    #cmdclass={"bdist_wheel": bdist_wheel},
+    cmdclass={"bdist_wheel": bdist_wheel},
 )
