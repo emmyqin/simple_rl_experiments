@@ -21,3 +21,6 @@ openrlhf = { path = "../train" }
 
 [build-system]
 requires = ["setuptools", "wheel", "torch>=2.5.1"]
+
+[tool.setuptools]
+packages = ["bash_bench_env", "basic_agent_env"]
