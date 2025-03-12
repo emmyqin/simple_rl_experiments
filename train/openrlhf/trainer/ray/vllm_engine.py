@@ -16,6 +16,7 @@ class LLMRayActor:
         import vllm
 
         self.__version__ = vllm.__version__
+        print(f'-----------------vllm engine 19 List Version {self.__version__} ')
         assert self.__version__ >= "0.4.1", "OpenRLHF only supports vLLM >= 0.4.1"
 
         self.use_gpu_executor = kwargs["tensor_parallel_size"] == 1
@@ -44,9 +45,16 @@ class LLMRayActor:
             RayWorkerWrapperPath.RayWorkerWrapper = RayWorkerWrapper
 
         self.llm = vllm.LLM(*args, **kwargs)
+        print(f'-----------------vllm engine 47 List the directories {dir(self.llm)} ')
 
     def generate(self, *args, **kwargs):
-        return self.llm.generate(*args, **kwargs)
+        if not kwargs.get("multiturn", False):
+            return self.llm.generate(*args, **kwargs)
+        
+        # Call the RL agent interface
+        data = kwargs["full_data"]
+        env = kwargs["env_maker"](full_data=data, sampling_params=kwargs["sampling_params"], vllm_engine=self.llm)
+        return env.generate_many()
 
     def init_process_group(self, master_address, master_port, rank_offset, world_size, group_name, backend):
         if self.use_gpu_executor:

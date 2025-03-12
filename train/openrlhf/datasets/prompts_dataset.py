@@ -3,17 +3,24 @@ from tqdm import tqdm
 from .utils import exist_and_not_none
 
 
-def preprocess_data(data, input_template=None, input_key="input", apply_chat_template=None) -> str:
-    if apply_chat_template:
-        chat = data[input_key]
-        if isinstance(chat, str):
-            chat = [{"role": "user", "content": chat}]
-        prompt = apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+def preprocess_data(data, input_template=None, input_key="input", apply_chat_template=None,
+                    multiturn=False) -> str:
+    if not multiturn:
+        if apply_chat_template:
+            chat = data[input_key]
+            if isinstance(chat, str):
+                chat = [{"role": "user", "content": chat}]
+            prompt = apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+        else:
+            prompt = data[input_key]
+            if input_template:
+                prompt = input_template.format(prompt)
+        return prompt
     else:
-        prompt = data[input_key]
-        if input_template:
-            prompt = input_template.format(prompt)
-    return prompt
+        prompt = ""
+        full_data = data
+        solution = data.get("solution", None)
+        return prompt, full_data, solution
 
 
 class PromptDataset(Dataset):
@@ -46,9 +53,20 @@ class PromptDataset(Dataset):
             apply_chat_template = self.tokenizer.apply_chat_template
 
         self.prompts = []
+        multiturn = vars(self.strategy.args).get("env_maker", False)
         for data in tqdm(dataset, desc="Preprocessing data", disable=not self.strategy.is_rank_0()):
-            prompt = preprocess_data(data, input_template, input_key, apply_chat_template)
-            self.prompts.append(prompt)
+            prompt = preprocess_data(data, input_template, input_key, apply_chat_template, 
+                                     multiturn=multiturn)
+            if not multiturn:
+                self.prompts.append(prompt)
+            else:
+                prompt, full_data, solution = prompt
+                data_entry = {"prompts": prompt,}
+                if full_data is not None:
+                    data_entry["full_data"] = full_data
+                if solution is not None:
+                    data_entry["solution"] = solution
+                self.prompts.append(data_entry)
 
     def __len__(self):
         length = len(self.prompts)

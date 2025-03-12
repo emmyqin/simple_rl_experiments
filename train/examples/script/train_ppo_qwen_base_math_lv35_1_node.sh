@@ -1,5 +1,6 @@
 
 HDFS_HOME=/home/ubuntu/chongli
+WANDB_HANDLE=TODO
 RUN_NAME=Qwen2.5-Math-7B_ppo_from_base_math_lv35
 
 python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_box.py \
@@ -40,7 +41,7 @@ python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_bo
     --gradient_checkpointing \
     --save_steps 4 \
     --load_checkpoint \
-    --use_wandb e3b3692567fa87e382e457dca44df981dd4feb05 \
+    --use_wandb $WANDB_HANDLE \
     --wandb_run_name maths_simple_check \
     --ckpt_path $HDFS_HOME/checkpoints/$RUN_NAME  \
     --max_ckpt_num 20000

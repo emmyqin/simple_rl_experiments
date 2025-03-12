@@ -20,4 +20,4 @@ transformers_stream_generator
 wandb
 wheel
 word2number
-vllm==0.4.2
+vllm

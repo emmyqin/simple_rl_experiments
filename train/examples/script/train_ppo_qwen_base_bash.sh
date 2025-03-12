@@ -1,8 +1,9 @@
 
 HDFS_HOME=/home/ubuntu/chongli
+WANDB_HANDLE=TODO
 RUN_NAME=Qwen2.5-Math-7B_ppo_from_base_math_lv35
 
-python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_box.py \
+python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_env.py \
     --ref_num_nodes 1 \
     --ref_num_gpus_per_node 2 \
     --reward_num_nodes 0 \
@@ -34,13 +35,16 @@ python3 /home/ubuntu/chongli/simpleRL-reason/train/openrlhf/cli/train_ppo_ray_bo
     --init_kl_coef 0.01 \
     --prompt_data  /home/ubuntu/joey/swe-tests/bashbenchtasks.json \
     --input_key task_description \
+    --apply_chat_template \
     --normalize_reward \
+    --env_file bash_bench_env \
+    --env_class BashBenchEnv \
     --flash_attn \
     --adam_offload \
     --gradient_checkpointing \
     --save_steps 4 \
     --load_checkpoint \
-    --use_wandb e3b3692567fa87e382e457dca44df981dd4feb05 \
+    --use_wandb $WANDB_HANDLE \
     --wandb_run_name bash_simple_check \
     --ckpt_path $HDFS_HOME/checkpoints/$RUN_NAME  \
     --max_ckpt_num 20000

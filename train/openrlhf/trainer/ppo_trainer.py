@@ -225,6 +225,7 @@ class PPOTrainer(ABC):
             )
 
             for rand_prompts in self.prompts_dataloader:
+                print(f'-------PPO TRAINER 228 Rand prompts-------- {type(rand_prompts)}')
                 for i, experience in enumerate(
                     self.experience_maker.make_experience_list(rand_prompts, **self.generate_kwargs)
                 ):
