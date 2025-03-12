@@ -9,7 +9,9 @@ dependencies = [
     "latex2sympy2>=1.9.1",
     "timeout-decorator>=0.5.0",
     "vllm>=0.6.5",
-    "openrlhf"
+    "openrlhf",
+    "pymongo",
+    "beartype"
 ]
 
 [tool.uv.sources]
