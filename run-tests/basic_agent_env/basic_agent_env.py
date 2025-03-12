@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from beartype import beartype
 from typing import *
 
-
+import logging
 import pymongo
 import uuid
 from datetime import datetime
@@ -16,6 +16,7 @@ import os, json
 import random
 dotenv.load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 
 Message = Dict[str, str]
@@ -196,6 +197,17 @@ class AgentInterface(ABC):
     def get_reward(self, messages: List[Message], state: AgentState) -> Reward:
         pass
 
+@ray.remote
+def get_reward_remote(agent: AgentInterface, messages: List[Message], state: AgentState) -> Reward:
+    return agent.get_reward(messages, state)
+
+@ray.remote
+def is_done_remote(agent: AgentInterface, messages: List[Message], state: AgentState) -> bool:
+    return agent.is_done(messages, state)
+
+@ray.remote
+def get_next_prompt_remote(agent: AgentInterface, messages: List[Message], state: AgentState) -> Optional[Tuple[Union[List[Message], Message], AgentState]]:
+    return agent.get_next_prompt(messages, state)
 
 # Message = dict[str, str]
 
