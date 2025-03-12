@@ -11,7 +11,8 @@ dependencies = [
     "vllm>=0.6.5",
     "openrlhf",
     "pymongo",
-    "beartype"
+    "beartype",
+    "flash-attn==2.7.0.post2"
 ]
 
 [tool.uv.sources]
