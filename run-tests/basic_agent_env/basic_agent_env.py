@@ -28,7 +28,7 @@ class AgentConversation:
     messages: List[Message]
     tokens_by_turn: List[Dict[str, Any]]
     first_prompt_tokens: List[int]
-    all_output_tokens: List[int]
+    all_tokens: List[int]
 
 class AgentInterface(ABC):
     def __init__(
@@ -55,7 +55,7 @@ class AgentInterface(ABC):
         tokens_by_turn = [list() for _ in range(self.num_envs)]
         total_tokens = [0 for _ in range(self.num_envs)]
         first_prompt_tokens = [None for _ in range(self.num_envs)]
-        all_output_tokens = [[] for _ in range(self.num_envs)]
+        all_tokens = [[] for _ in range(self.num_envs)]
         # Continue until all conversations are complete
         while active_indices:
              # Get next prompts for all active conversations
