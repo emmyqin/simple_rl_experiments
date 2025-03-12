@@ -1,6 +1,7 @@
 from vllm import LLM, SamplingParams
 import re
 import vllm
+import ray
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from beartype import beartype
@@ -56,17 +57,45 @@ class AgentInterface(ABC):
         all_output_tokens = [[] for _ in range(self.num_envs)]
         # Continue until all conversations are complete
         while active_indices:
-            # Get next prompts for all active conversations
+             # Get next prompts for all active conversations
+            try:
+                # Temporarily remove vllm engine before sending through Ray
+                vllm_engine = self.vllm_engine
+                self.vllm_engine = None
+                all_prompts_and_states = ray.get([
+                    get_next_prompt_remote.remote(self, messages=all_messages[idx], state=states[idx]) 
+                    for idx in active_indices
+                ])
+                self.vllm_engine = vllm_engine
+            except Exception as e:
+                self.vllm_engine = vllm_engine  # Restore in case of error
+                logger.error(f"Error getting prompts: {str(e)}")
+                raise
+                
             active_conversations = []
-            for idx in active_indices:
-                #TODO:
-                prompt, states[idx] = self.get_next_prompt(all_messages[idx], states[idx])
-                if prompt is None or states[idx] is None:
-                    # The environment is done, so we don't need to generate any more prompts
+            indices_to_remove = []
+            for i, idx in enumerate(active_indices):
+                result = all_prompts_and_states[i]
+                if result is None:
                     active_indices.remove(idx)
                     continue
-                all_messages[idx].append(prompt)
+                    
+                prompt, states[idx] = result
+                if prompt is None or states[idx] is None:
+                    # The environment is done, so we don't need to generate any more prompts
+                    # active_indices.remove(idx)
+                    indices_to_remove.append(idx)
+                    continue
+                if isinstance(prompt, list):
+                    all_messages[idx].extend(prompt)
+                elif isinstance(prompt, dict):  
+                    all_messages[idx].append(prompt)
+                else:
+                    raise ValueError(f"Invalid prompt type: {type(prompt)}")
                 active_conversations.append(all_messages[idx])
+
+            for idx in indices_to_remove:
+                active_indices.remove(idx)
 
             # Leave the loop if all conversations are done
             if len(active_conversations) == 0:
@@ -80,6 +109,13 @@ class AgentInterface(ABC):
             )
 
             # Process outputs and update states
+            vllm_engine = self.vllm_engine
+            self.vllm_engine = None
+            all_is_done = ray.get([
+                is_done_remote.remote(self, messages=all_messages[idx], state=states[idx]) 
+                for idx in active_indices
+            ])
+            self.vllm_engine = vllm_engine
             new_active_indices = []
             for i, output in enumerate(outputs):
                 real_idx = active_indices[i]
@@ -88,8 +124,13 @@ class AgentInterface(ABC):
 
                 input_tokens = output.prompt_token_ids[total_tokens[real_idx]:]
                 output_tokens = output.outputs[0].token_ids
-                output_message = {"role": "assistant", "content": output.outputs[0].text}
                 
+                generation_starter_text = output.prompt[-10:]
+                if "think" in generation_starter_text.lower():
+                    output_message = {"role": "assistant", "content": "<think>" + output.outputs[0].text}
+                else:
+                    output_message = {"role": "assistant", "content": output.outputs[0].text}
+
                 all_messages[real_idx].append(output_message)
                 tokens_by_turn[real_idx].append({
                     "input_tokens": input_tokens,
@@ -97,18 +138,30 @@ class AgentInterface(ABC):
                 })
                 total_tokens[real_idx] += len(input_tokens) + len(output_tokens)
                 
-                all_output_tokens[real_idx] = list(output.prompt_token_ids) + list(output.outputs[0].token_ids)
-                    
-                if not self.is_done(all_messages[real_idx], states[real_idx]):
+                all_tokens[real_idx] = list(output.prompt_token_ids) + list(output.outputs[0].token_ids)
+                all_tokens_text[real_idx] = output.prompt + output.outputs[0].text
+                if not all_is_done[i]:
                     new_active_indices.append(real_idx)
+            
             active_indices = new_active_indices
+            
         # Calculate rewards for completed conversations
         results = []
-        for messages, tokens_by_turn, state, fpt, aot in zip(all_messages, tokens_by_turn, states, first_prompt_tokens, all_output_tokens):
-            reward = self.get_reward(messages, state)
-            conversation = AgentConversation(messages=messages, tokens_by_turn=tokens_by_turn, first_prompt_tokens=fpt, all_output_tokens=aot)
+        vllm_engine = self.vllm_engine
+        self.vllm_engine = None
+        all_rewards = ray.get([
+            get_reward_remote.remote(self, messages=all_messages[idx], state=states[idx]) 
+            for idx in range(self.num_envs)
+        ])
+        self.vllm_engine = vllm_engine
+        
+        # Create results list
+        results_data = []
+        for i, (messages, tokens_by_turn_one_env, fpt, aot) in enumerate(zip(all_messages, tokens_by_turn, first_prompt_tokens, all_tokens)):
+            reward = all_rewards[i]
+            conversation = AgentConversation(messages=messages, tokens_by_turn=tokens_by_turn_one_env, first_prompt_tokens=fpt, all_tokens=aot)
             results.append((conversation, reward))
-
+        
         return results
 
     @abstractmethod
