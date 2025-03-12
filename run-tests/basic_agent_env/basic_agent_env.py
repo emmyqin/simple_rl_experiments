@@ -28,7 +28,7 @@ class AgentConversation:
     messages: List[Message]
     tokens_by_turn: List[Dict[str, Any]]
     first_prompt_tokens: List[int]
-    all_tokens: List[int]
+    all_output_tokens: List[int]
 
 class AgentInterface(ABC):
     def __init__(
@@ -159,7 +159,7 @@ class AgentInterface(ABC):
         results_data = []
         for i, (messages, tokens_by_turn_one_env, fpt, aot) in enumerate(zip(all_messages, tokens_by_turn, first_prompt_tokens, all_tokens)):
             reward = all_rewards[i]
-            conversation = AgentConversation(messages=messages, tokens_by_turn=tokens_by_turn_one_env, first_prompt_tokens=fpt, all_tokens=aot)
+            conversation = AgentConversation(messages=messages, tokens_by_turn=tokens_by_turn_one_env, first_prompt_tokens=fpt, all_output_tokens=aot)
             results.append((conversation, reward))
         
         return results
