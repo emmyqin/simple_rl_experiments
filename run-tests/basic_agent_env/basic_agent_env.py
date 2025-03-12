@@ -140,7 +140,6 @@ class AgentInterface(ABC):
                 total_tokens[real_idx] += len(input_tokens) + len(output_tokens)
                 
                 all_tokens[real_idx] = list(output.prompt_token_ids) + list(output.outputs[0].token_ids)
-                all_tokens_text[real_idx] = output.prompt + output.outputs[0].text
                 if not all_is_done[i]:
                     new_active_indices.append(real_idx)
             
